@@ -1,3 +1,6 @@
-gradio
-selenium
-instaloader
+streamlit==1.25.0
+instaloader==4.10.0
+selenium==4.14.0
+webdriver-manager==4.0.0
+pip>=24.2
+pillow>=7.2.0
