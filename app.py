@@ -1,6 +1,5 @@
-import gradio as gr
+import streamlit as st
 import os
-import zipfile
 import instaloader
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -81,40 +80,53 @@ def get_instagram_data(username, password, folder_name):
         for followee in following:
             file.write(f"{followee}\n")
 
-    # Create a ZIP file
-    zip_filename = f"{folder_name}.zip"
-    with zipfile.ZipFile(zip_filename, 'w') as zipf:
-        for root, dirs, files in os.walk(folder_name):
-            for file in files:
-                zipf.write(os.path.join(root, file),
-                            arcname=os.path.relpath(os.path.join(root, file),
-                            os.path.join(folder_name, '..')))
-
     driver.quit()
 
-    return zip_filename
+    return {
+        "posts_data": len(posts_data),
+        "followers": len(followers),
+        "following": len(following)
+    }
 
-# Gradio Interface
-def main(username, password, folder_name):
-    if username and password:
-        zip_file = get_instagram_data(username, password, folder_name)
-        success_message = f"Data saved and compressed into ZIP file: `{zip_file}`"
-        return zip_file, success_message
-    else:
-        return None, "Please enter both username and password."
-
-# Create Gradio interface
-iface = gr.Interface(
-    fn=main,
-    inputs=[
-        gr.Textbox(label="Instagram Username"),
-        gr.Textbox(label="Instagram Password", type="password"),
-        gr.Textbox(label="Folder Name to Save Data", value="instagram_data")
-    ],
-    outputs=["file", "text"],
-    title="Snap Crawler",
-    description="Extracts posts, followers, and following from an Instagram account and saves them in a ZIP file."
-)
+# Streamlit App
+def main():
+    st.markdown(
+        """
+        <style>
+        .title {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 4rem;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 2rem;
+            margin-top: 0.5rem;
+        }
+        </style>
+        <h1 class="title">Snap Crawler</h1>
+        <h2 class="subtitle">Instagram</h2>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Get user input
+    username = st.text_input("Instagram Username")
+    password = st.text_input("Instagram Password", type="password")
+    folder_name = st.text_input("Folder Name to Save Data", value="instagram_data")
+    
+    if st.button("Start Extraction"):
+        if username and password:
+            with st.spinner("Extracting data..."):
+                result = get_instagram_data(username, password, folder_name)
+                st.success("Data Extraction Completed")
+                
+                st.write(f"Data saved in folder: `{folder_name}`")
+                st.write(f"Number of posts downloaded: {result['posts_data']}")
+                st.write(f"Number of followers: {result['followers']}")
+                st.write(f"Number of following: {result['following']}")
+        else:
+            st.error("Please enter both username and password.")
 
 if __name__ == "__main__":
-    iface.launch(share=True)
+    main()
